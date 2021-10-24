@@ -26,3 +26,8 @@ func (d *Dumper) Read(addr uint16) uint8 {
 func (d *Dumper) ReadRange(startAddr uint16, endAddr uint16) []uint8 {
 	return []uint8{0x00, 0x00}
 }
+
+func (d *Dumper) ReadHeader() *CartridgeHeader {
+	bytes := d.ReadRange(0x00, 0x150)
+	return ROMHeaderFromBytes(bytes)
+}

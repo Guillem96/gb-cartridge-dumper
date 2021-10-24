@@ -22,6 +22,11 @@ func main() {
 
 	// Create cartridge dumper
 	gbproxy := gbproxy.NewRPiGameBoyProxy(gbcon)
-	dumper := cartridge.NewDumper(gbproxy)
-	dumper.Read(0x3FFF)
+	d := cartridge.NewDumper(gbproxy)
+	ch := d.ReadHeader()
+	err := ch.ValidateHeader()
+	if err != nil {
+		fmt.Println(fmt.Errorf("cartridge is not valid: %v", err))
+	}
+	fmt.Println(ch.NintendoLogo)
 }
