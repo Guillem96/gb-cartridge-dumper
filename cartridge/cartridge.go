@@ -128,8 +128,8 @@ func (ch *CartridgeHeader) GetNumRAMBanks() int {
 		Unused:   0,
 		RAM8KB:   1,
 		RAM32KB:  4,
-		RAM128KB: 16,
 		RAM64KB:  8,
+		RAM128KB: 16,
 	}[ch.RAMSize]
 }
 

@@ -12,6 +12,7 @@ type yamlGameBoyMappingContainer struct {
 	Gameboy GameBoyRaspberryMapping `yaml:"gameboy-pins"`
 }
 
+// GameBoyRaspberryMapping structure to map RaspberryPi GPIO pins to GameBoy cartridge pins
 type GameBoyRaspberryMapping struct {
 	RD int64 `yaml:"RD"`
 
@@ -42,7 +43,7 @@ type GameBoyRaspberryMapping struct {
 	D7 int32 `yaml:"D7"`
 }
 
-// Parses the yaml file containing the mapping from GameBoy cartridge pins to Raspberry pins
+// ParseWireMapping parses the yaml file containing the mapping from GameBoy cartridge pins to Raspberry pins
 func ParseWireMapping(path string) *GameBoyRaspberryMapping {
 	yamlFile, err := ioutil.ReadFile(path)
 	if err != nil {
