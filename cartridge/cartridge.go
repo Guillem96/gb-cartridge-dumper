@@ -5,6 +5,8 @@ import "errors"
 // Reference: https://gbdev.io/pandocs/The_Cartridge_Header.html
 
 type Cartridge struct {
+	header *CartridgeHeader
+	banks [][]uint8
 }
 
 const (
@@ -62,6 +64,7 @@ const (
 	RAM64KB  uint8 = 0x05
 )
 
+// CartridgeHeader contains all the information stored in the GB cartridge header
 type CartridgeHeader struct {
 	rawBytes         []uint8
 	NintendoLogo     []uint8 // 0104-0133 - Nintendo Logo
@@ -80,6 +83,8 @@ type CartridgeHeader struct {
 	GlobalChecksum   []uint8
 }
 
+// ROMHeaderFromBytes loads the given bytes into the CartridgeHeader structure and returns a 
+// reference to the recently created structure
 func ROMHeaderFromBytes(bytes []uint8) *CartridgeHeader {
 	return &CartridgeHeader{
 		rawBytes:         bytes,
@@ -100,14 +105,17 @@ func ROMHeaderFromBytes(bytes []uint8) *CartridgeHeader {
 	}
 }
 
+// IsGBCOnly returns true if the cartridge can only run in a GameBoy color
 func (ch *CartridgeHeader) IsGBCOnly() bool {
 	return ch.CGBFlag == 0xC0
 }
 
+// SupportsSGB returns true if the cartridge supports Super GameBoy
 func (ch *CartridgeHeader) SupportsSGB() bool {
 	return ch.SGBFlag == 0x03
 }
 
+// GetNumROMBanks returns the number of ROM banks in the cartridge
 func (ch *CartridgeHeader) GetNumROMBanks() int {
 	return map[uint8]int{
 		ROM32KB:  2,
@@ -122,6 +130,7 @@ func (ch *CartridgeHeader) GetNumROMBanks() int {
 	}[ch.ROMSize]
 }
 
+// GetNumRAMBanks returns the number of RAM banks in the cartridge
 func (ch *CartridgeHeader) GetNumRAMBanks() int {
 	return map[uint8]int{
 		None:     0,
@@ -133,6 +142,8 @@ func (ch *CartridgeHeader) GetNumRAMBanks() int {
 	}[ch.RAMSize]
 }
 
+// ValidateHeader runs the checksum procedure and compares te result agains the byte located at
+// 0x14D. If the result matches with the predefined checksum means that the dump has been successful
 func (ch *CartridgeHeader) ValidateHeader() error {
 	var x uint
 	x = 0x00

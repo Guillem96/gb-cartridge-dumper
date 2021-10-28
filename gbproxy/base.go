@@ -27,12 +27,12 @@ type GameBoyPin interface {
 // I am implementing this interface in the gbproxy/gbrpi.go so it works with it.
 // Ideally, if you are working with any other type of hardware (arduino for instance) you should
 // only implement this interface, so you have an object able to interact with GameBoy, and provide
-// this new object to the cartrige.Dumper
+// this new object to the cartridge.Dumper
 type GameBoyProxy interface {
 
 	// Read returns the byte read at the address specified with the SelectAddress method
 	Read() uint8
 
 	// SelectAddress sets the pins status so they point to the provided memory address
-	SelectAddress(addr uint16)
+	SelectAddress(addr uint) error
 }

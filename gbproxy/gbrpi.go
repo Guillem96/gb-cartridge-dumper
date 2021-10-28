@@ -3,7 +3,7 @@ package gbproxy
 import (
 	"github.com/Guillem96/gb-dumper/bytes"
 	"github.com/Guillem96/gb-dumper/io"
-	"github.com/stianeikeland/go-rpio"
+	"github.com/stianeikeland/go-rpio/v4"
 )
 
 // GameBoyRPiPin implements the GameBoyPin interface. This implementation maps connections between
@@ -49,6 +49,8 @@ func (p GameBoyRPiPin) Output() {
 type RPiGameBoyProxy struct {
 	As []GameBoyRPiPin
 	Db []GameBoyRPiPin
+	Rd GameBoyRPiPin
+	Wr GameBoyRPiPin
 }
 
 // NewRPiGameBoyProxy creates a new RPiGameBoyProxy
@@ -70,20 +72,31 @@ func NewRPiGameBoyProxy(cm *io.GameBoyRaspberryMapping) *RPiGameBoyProxy {
 		a.Output()
 	}
 
-	// We read the data stored in the requested addres (DX pins)
-	for _, d := range db {
-		d.Input()
-	}
+	rd := GameBoyRPiPin(cm.RD)
+	rd.Output()
+
+	wr := GameBoyRPiPin(cm.WR)
+	wr.Output()
 
 	return &RPiGameBoyProxy{
 		As: as,
 		Db: db,
+		Rd: rd,
+		Wr: wr,
 	}
 }
 
 // Read reads the byte located in the address specified with the SelectAddress method.
 func (rpigb *RPiGameBoyProxy) Read() uint8 {
 	var result uint8
+
+	// When reading we set DX pins to input mode
+	for _, d := range rpigb.Db {
+		d.Input()
+	}
+
+	// TODO: Set RD pin high?
+
 	result = 0x00
 	for i := 0; i < 8; i++ {
 		if rpigb.Db[i].Read() {
@@ -93,9 +106,37 @@ func (rpigb *RPiGameBoyProxy) Read() uint8 {
 	return result
 }
 
+// Write writes the provided value to the selected address with the SelectAddress function
+func (rpigb *RPiGameBoyProxy) Write(value uint) error {
+	// When writing we set DX pins to output mode
+	for _, d := range rpigb.Db {
+		d.Output()
+	}
+
+	pinsState, err := bytes.AddressToBitArray(value, 8)
+	if err != nil {
+		return err
+	}
+
+	for i, ps := range pinsState {
+		if ps {
+			rpigb.Db[i].High()
+		} else {
+			rpigb.Db[i].Low()
+		}
+	}
+
+	// TODO: Set WR pin high?
+	return nil
+}
+
 // SelectAddress sets the GPIO pins status so the referenced address in the cartridge is the given one
-func (rpigb *RPiGameBoyProxy) SelectAddress(addr uint16) {
-	pinsState := bytes.AddressToBitArray(addr)
+func (rpigb *RPiGameBoyProxy) SelectAddress(addr uint) error {
+	pinsState, err := bytes.AddressToBitArray(addr, 16)
+	if err != nil {
+		return err
+	}
+
 	for i, ps := range pinsState {
 		if ps {
 			rpigb.As[i].High()
@@ -103,4 +144,5 @@ func (rpigb *RPiGameBoyProxy) SelectAddress(addr uint16) {
 			rpigb.As[i].Low()
 		}
 	}
+	return nil
 }

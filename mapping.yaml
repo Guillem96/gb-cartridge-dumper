@@ -1,6 +1,7 @@
 # Mapping from GameBoy cartridge pins to Raspberry PI pins
 gameboy-pins:
     RD: 1
+    WR: 1
 
     # Address selection pins
     A0: 1

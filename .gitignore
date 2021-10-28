@@ -2,4 +2,4 @@
 .vscode/
 
 # Generated binary
-gb-dumper
+build/
