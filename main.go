@@ -35,13 +35,9 @@ func main() {
 	d := cartridge.NewDumper(gbproxy)
 
 	// Start reading the cartridge
-	ch, err := d.ReadHeader()
-	if err != nil {
-		fmt.Println(fmt.Errorf("reading header: %v\n", err))
-		os.Exit(1)
-	}
+	ch := d.ReadHeader()
 
-	err = ch.ValidateHeader()
+	err := ch.ValidateHeader()
 	if err != nil {
 		fmt.Println(fmt.Errorf("cartridge is not valid: %v", err))
 		os.Exit(1)

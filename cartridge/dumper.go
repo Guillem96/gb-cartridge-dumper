@@ -2,7 +2,6 @@ package cartridge
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"os"
 
@@ -27,35 +26,59 @@ func NewDumper(gbp gbproxy.GameBoyProxy) *Dumper {
 }
 
 // Read reads the stored byte in cartridge requested address
-func (d *Dumper) Read(addr uint) (uint8, error) {
-	if err := d.gbp.SelectAddress(addr); err != nil {
-		return 0x0, err
-	}
-	return d.gbp.Read(), nil
+func (d *Dumper) Read(addr uint) uint8 {
+	d.gbp.SelectAddress(addr)
+	return d.gbp.Read()
 }
 
 // ReadRange reads a range of addresses and returns all read bytes in order
-func (d *Dumper) ReadRange(startAddr uint, endAddr uint) ([]uint8, error) {
+func (d *Dumper) ReadRange(startAddr uint, endAddr uint) []uint8 {
 	d.l.Printf("Reading address range 0x%x to 0x%x", startAddr, endAddr)
 	rb := make([]uint8, 0)
 	for ca := startAddr; ca < endAddr; ca++ {
-		v, err := d.Read(ca)
-		if err != nil {
-			errMsg := fmt.Sprintf("reading address 0x%x: %v", ca, err)
-			return nil, errors.New(errMsg)
-		}
-		rb = append(rb, v)
+		rb = append(rb, d.Read(ca))
 	}
-	return rb, nil
+	return rb
 }
 
 // ReadHeader reads the whole cartridge header
-func (d *Dumper) ReadHeader() (*CartridgeHeader, error) {
-	d.l.Println("Reading ROM header data.")
-	bytes, err := d.ReadRange(0x00, 0x150)
-	if err != nil {
-		return nil, err
+func (d *Dumper) ReadHeader() *CartridgeHeader {
+	if d.header != nil {
+		return d.header
 	}
+	d.l.Println("Reading ROM header data.")
+	bytes := d.ReadRange(0x00, 0x150)
 	d.header = ROMHeaderFromBytes(bytes)
-	return d.header, nil
+	return d.header
+}
+
+// ChangeROMBank communicates with the GameBoy MBC and changes the active ROM bank
+func (d *Dumper) ChangeROMBank(bank uint) error {
+	h := d.ReadHeader()
+
+	if !h.HasMBC() {
+		return errors.New("cartridge has no MBC.")
+	}
+
+	if h.IsMBC1() {
+		if bank > 127 {
+			return errors.New("MBC1 only has 7 bits to address a ROM bank. The provided bank cannot be represented using 7bits")
+		}
+
+		// Select ROM banking mode
+		d.gbp.SelectAddress(0x6000)
+		d.gbp.Write(uint8(1))
+
+		// Low bank number
+		d.gbp.SelectAddress(0x2100)
+		d.gbp.Write(uint8(bank & 0x1F))
+
+		// 2 bit high number
+		d.gbp.SelectAddress(0x4000)
+		d.gbp.Write(uint8((bank >> 5) & 0x03))
+	} else {
+		return errors.New("cartridge not supported yet.")
+	}
+
+	return nil
 }

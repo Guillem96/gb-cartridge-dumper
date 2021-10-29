@@ -6,7 +6,7 @@ import "errors"
 
 type Cartridge struct {
 	header *CartridgeHeader
-	banks [][]uint8
+	banks  [][]uint8
 }
 
 const (
@@ -83,7 +83,7 @@ type CartridgeHeader struct {
 	GlobalChecksum   []uint8
 }
 
-// ROMHeaderFromBytes loads the given bytes into the CartridgeHeader structure and returns a 
+// ROMHeaderFromBytes loads the given bytes into the CartridgeHeader structure and returns a
 // reference to the recently created structure
 func ROMHeaderFromBytes(bytes []uint8) *CartridgeHeader {
 	return &CartridgeHeader{
@@ -113,6 +113,16 @@ func (ch *CartridgeHeader) IsGBCOnly() bool {
 // SupportsSGB returns true if the cartridge supports Super GameBoy
 func (ch *CartridgeHeader) SupportsSGB() bool {
 	return ch.SGBFlag == 0x03
+}
+
+// HasMBC returns true if the cartridge has a MBC
+func (ch *CartridgeHeader) HasMBC() bool {
+	return ch.CartridgeType != RomOnly && ch.CartridgeType != ROMRAM && ch.CartridgeType != ROMRAMBattery
+}
+
+// IsMBC1 returns true if the cartridge is MBC1 type
+func (ch *CartridgeHeader) IsMBC1() bool {
+	return ch.CartridgeType == MBC1 || ch.CartridgeType == MBC1RAM || ch.CartridgeType == MBC1RAMBattery
 }
 
 // GetNumROMBanks returns the number of ROM banks in the cartridge

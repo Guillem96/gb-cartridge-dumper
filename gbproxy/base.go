@@ -3,7 +3,7 @@ package gbproxy
 // GameBoyPin interface defines the needed methods to manage the GameBoy connections
 type GameBoyPin interface {
 	// Read returns the pin state, if returns true it means that the pin state is High
-	Read()
+	Read() bool
 
 	// High sets the pin value to 1
 	High()
@@ -13,7 +13,7 @@ type GameBoyPin interface {
 
 	// SetState sets the given state to the pin, if true is provided as a parameter the pin state
 	// will be set to High
-	SetState(state bool)
+	SetState(bool)
 
 	// Input sets the pin in input mode (pins controlled from the host)
 	Input()
@@ -33,6 +33,9 @@ type GameBoyProxy interface {
 	// Read returns the byte read at the address specified with the SelectAddress method
 	Read() uint8
 
+	// Write writes to the sleeted address the given value
+	Write(uint8)
+
 	// SelectAddress sets the pins status so they point to the provided memory address
-	SelectAddress(addr uint) error
+	SelectAddress(uint)
 }

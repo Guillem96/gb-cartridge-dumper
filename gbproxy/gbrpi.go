@@ -1,7 +1,8 @@
 package gbproxy
 
 import (
-	"github.com/Guillem96/gb-dumper/bytes"
+	"time"
+
 	"github.com/Guillem96/gb-dumper/io"
 	"github.com/stianeikeland/go-rpio/v4"
 )
@@ -90,12 +91,7 @@ func NewRPiGameBoyProxy(cm *io.GameBoyRaspberryMapping) *RPiGameBoyProxy {
 func (rpigb *RPiGameBoyProxy) Read() uint8 {
 	var result uint8
 
-	// When reading we set DX pins to input mode
-	for _, d := range rpigb.Db {
-		d.Input()
-	}
-
-	// TODO: Set RD pin high?
+	rpigb.readMode()
 
 	result = 0x00
 	for i := 0; i < 8; i++ {
@@ -107,42 +103,51 @@ func (rpigb *RPiGameBoyProxy) Read() uint8 {
 }
 
 // Write writes the provided value to the selected address with the SelectAddress function
-func (rpigb *RPiGameBoyProxy) Write(value uint) error {
+func (rpigb *RPiGameBoyProxy) Write(value uint8) {
 	// When writing we set DX pins to output mode
 	for _, d := range rpigb.Db {
 		d.Output()
 	}
 
-	pinsState, err := bytes.AddressToBitArray(value, 8)
-	if err != nil {
-		return err
-	}
+	rpigb.writeMode()
+	rpigb.writeToRPiPins(uint(value), rpigb.Db)
 
-	for i, ps := range pinsState {
-		if ps {
-			rpigb.Db[i].High()
-		} else {
-			rpigb.Db[i].Low()
-		}
-	}
+	// Wait for GameBoy to do the write
+	time.Sleep(5 * time.Millisecond)
 
-	// TODO: Set WR pin high?
-	return nil
+	// Back to read mode (safest)
+	rpigb.readMode()
+
+	// Reset the DX to low
+	for _, d := range rpigb.Db {
+		d.Low()
+		d.Input()
+	}
 }
 
 // SelectAddress sets the GPIO pins status so the referenced address in the cartridge is the given one
-func (rpigb *RPiGameBoyProxy) SelectAddress(addr uint) error {
-	pinsState, err := bytes.AddressToBitArray(addr, 16)
-	if err != nil {
-		return err
-	}
+func (rpigb *RPiGameBoyProxy) SelectAddress(addr uint) {
+	rpigb.writeToRPiPins(addr, rpigb.As)
+}
 
-	for i, ps := range pinsState {
-		if ps {
-			rpigb.As[i].High()
-		} else {
-			rpigb.As[i].Low()
-		}
+func (rpigb *RPiGameBoyProxy) readMode() {
+	// To read we have to do the contrary (Rd to ground and Wr to high)
+	rpigb.Rd.Low()
+	rpigb.Wr.High()
+	time.Sleep(5 * time.Millisecond)
+}
+
+func (rpigb *RPiGameBoyProxy) writeMode() {
+	// To write we have to do the contrary (Wr to ground and Rd to high)
+	rpigb.Rd.High()
+	rpigb.Wr.Low()
+	time.Sleep(5 * time.Millisecond)
+}
+
+func (rpigb *RPiGameBoyProxy) writeToRPiPins(value uint, pins []GameBoyRPiPin) {
+	gbPins := make([]GameBoyPin, 0)
+	for _, p := range rpigb.As {
+		gbPins = append(gbPins, GameBoyPin(p))
 	}
-	return nil
+	writeToPins(value, gbPins)
 }
