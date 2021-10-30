@@ -1,12 +1,49 @@
 package cartridge
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"os"
+)
 
 // Reference: https://gbdev.io/pandocs/The_Cartridge_Header.html
 
 type Cartridge struct {
-	header *CartridgeHeader
-	banks  [][]uint8
+	Header   *CartridgeHeader
+	ROMBanks [][]uint8
+	RAMBanks [][]uint
+}
+
+func NewCartridge(h *CartridgeHeader, rbs [][]uint8) *Cartridge {
+	return &Cartridge{
+		Header:   h,
+		ROMBanks: rbs,
+		RAMBanks: nil,
+	}
+}
+
+func (c *Cartridge) Save(fname string) error {
+	f, err := os.Create(fname)
+	if err != nil {
+		errMsg := fmt.Sprintf("error creating file %v: %+v\n", fname, err)
+		return errors.New(errMsg)
+	}
+	defer f.Close()
+
+	for i, b := range c.ROMBanks {
+		_, err := f.Write(b)
+		if err != nil {
+			errMsg := fmt.Sprintf("error writing bank %d: %+v\n", i, err)
+			return errors.New(errMsg)
+		}
+		err = f.Sync()
+		if err != nil {
+			errMsg := fmt.Sprintf("failed syncing the bank %d bytes: %+v\n", i, err)
+			return errors.New(errMsg)
+		}
+	}
+
+	return nil
 }
 
 const (
@@ -15,8 +52,8 @@ const (
 	MBC1                       uint8 = 0x01
 	MBC1RAM                    uint8 = 0x02
 	MBC1RAMBattery             uint8 = 0x03
-	MCB2                       uint8 = 0x05
-	MCB2Battery                uint8 = 0x06
+	MBC2                       uint8 = 0x05
+	MBC2Battery                uint8 = 0x06
 	ROMRAM                     uint8 = 0x08
 	ROMRAMBattery              uint8 = 0x09
 	MMM01                      uint8 = 0x0B
@@ -123,6 +160,24 @@ func (ch *CartridgeHeader) HasMBC() bool {
 // IsMBC1 returns true if the cartridge is MBC1 type
 func (ch *CartridgeHeader) IsMBC1() bool {
 	return ch.CartridgeType == MBC1 || ch.CartridgeType == MBC1RAM || ch.CartridgeType == MBC1RAMBattery
+}
+
+// IsMBC2 returns true if the cartridge is MBC2 type
+func (ch *CartridgeHeader) IsMBC2() bool {
+	return ch.CartridgeType == MBC2 || ch.CartridgeType == MBC2Battery
+}
+
+// IsMBC3 returns true if the cartridge is MBC3 type
+func (ch *CartridgeHeader) IsMBC3() bool {
+	return ch.CartridgeType == MBC3 || ch.CartridgeType == MBC3RAM || ch.CartridgeType == MBC3RAMBattery ||
+		ch.CartridgeType == MBC3TimerBattery || ch.CartridgeType == MBC3TimerRAMBattery
+}
+
+// IsMBC5 returns true if the cartridge is MBC5 type
+func (ch *CartridgeHeader) IsMBC5() bool {
+	return ch.CartridgeType == MBC5 || ch.CartridgeType == MBC5RAM || ch.CartridgeType == MBC5RAMBattery ||
+		ch.CartridgeType == MBC5Rumble || ch.CartridgeType == MBC5RumbleRAM ||
+		ch.CartridgeType == MBC5RumbleRAMBattery
 }
 
 // GetNumROMBanks returns the number of ROM banks in the cartridge
