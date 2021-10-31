@@ -54,7 +54,7 @@ func (d *Dumper) ReadHeader() *CartridgeHeader {
 }
 
 // ReadCartridge dumps the whole cartridge data. Reads all ROM & RAM banks
-func (d *Dumper) ReadCartridge() *Cartridge {
+func (d *Dumper) ReadCartridge() (*Cartridge, error) {
 	h := d.ReadHeader()
 
 	// Dump Rom banks
@@ -65,6 +65,10 @@ func (d *Dumper) ReadCartridge() *Cartridge {
 	var addrBase uint
 	addrBase = 0x0000
 	for b := 0; b < nb; b++ {
+		err := d.ChangeROMBank(uint(b))
+		if err != nil {
+			return nil, err
+		}
 		if h.IsMBC1() && (nb == 0x00 || nb == 0x20 || nb == 0x40 || nb == 0x60) {
 			addrBase = 0x0000
 		} else if b > 0 {
@@ -76,7 +80,7 @@ func (d *Dumper) ReadCartridge() *Cartridge {
 
 	// TODO: Dump the Cartridge RAM
 
-	return NewCartridge(h, banks)
+	return NewCartridge(h, banks), nil
 }
 
 // ChangeROMBank communicates with the GameBoy MBC and changes the active ROM bank
