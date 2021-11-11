@@ -182,6 +182,10 @@ func (ch *CartridgeHeader) IsMBC5() bool {
 
 // GetNumROMBanks returns the number of ROM banks in the cartridge
 func (ch *CartridgeHeader) GetNumROMBanks() int {
+	if !ch.HasMBC() {
+		return 0
+	}
+
 	return map[uint8]int{
 		ROM32KB:  2,
 		ROM64KB:  4,

@@ -15,7 +15,7 @@ type yamlGameBoyMappingContainer struct {
 // GameBoyRaspberryMapping structure to map RaspberryPi GPIO pins to GameBoy cartridge pins
 type GameBoyRaspberryMapping struct {
 	RD int32 `yaml:"RD"`
-	WR int32 `yaml:WR`
+	WR int32 `yaml:"WR"`
 
 	A0  int32 `yaml:"A0"`
 	A1  int32 `yaml:"A1"`

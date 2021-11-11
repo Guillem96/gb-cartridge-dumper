@@ -110,10 +110,7 @@ func (rpigb *RPiGameBoyProxy) Write(value uint8) {
 	}
 
 	rpigb.writeMode()
-	rpigb.writeToRPiPins(uint(value), rpigb.Db)
-
-	// Wait for GameBoy to do the write
-	time.Sleep(5 * time.Millisecond)
+	writeToRPiPins(uint(value), rpigb.Db)
 
 	// Back to read mode (safest)
 	rpigb.readMode()
@@ -127,7 +124,7 @@ func (rpigb *RPiGameBoyProxy) Write(value uint8) {
 
 // SelectAddress sets the GPIO pins status so the referenced address in the cartridge is the given one
 func (rpigb *RPiGameBoyProxy) SelectAddress(addr uint) {
-	rpigb.writeToRPiPins(addr, rpigb.As)
+	writeToRPiPins(addr, rpigb.As)
 }
 
 func (rpigb *RPiGameBoyProxy) readMode() {
@@ -144,10 +141,13 @@ func (rpigb *RPiGameBoyProxy) writeMode() {
 	time.Sleep(5 * time.Millisecond)
 }
 
-func (rpigb *RPiGameBoyProxy) writeToRPiPins(value uint, pins []GameBoyRPiPin) {
+func writeToRPiPins(value uint, pins []GameBoyRPiPin) {
 	gbPins := make([]GameBoyPin, 0)
-	for _, p := range rpigb.As {
+	for _, p := range pins {
 		gbPins = append(gbPins, GameBoyPin(p))
 	}
 	writeToPins(value, gbPins)
+
+	// Wait for GameBoy to do the write
+	time.Sleep(5 * time.Millisecond)
 }
