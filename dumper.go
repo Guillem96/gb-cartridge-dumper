@@ -1,4 +1,4 @@
-package cartridge
+package main
 
 import (
 	"errors"
@@ -6,7 +6,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/Guillem96/gb-dumper/gbproxy"
+	"github.com/Guillem96/gameboy-tools/cartridge"
+	"github.com/Guillem96/gameboy-tools/gbproxy"
 )
 
 // Dumper is the object responsible of running "queries" against the cartridge dumper
@@ -14,7 +15,7 @@ import (
 type Dumper struct {
 	l      *log.Logger
 	gbp    gbproxy.GameBoyProxy
-	header *CartridgeHeader
+	header *cartridge.CartridgeHeader
 }
 
 // NewDumper creates a new cartridge dumper and returns a pointer to it
@@ -28,12 +29,14 @@ func NewDumper(gbp gbproxy.GameBoyProxy) *Dumper {
 
 // Read reads the stored byte in cartridge requested address
 func (d *Dumper) Read(addr uint) uint8 {
+	d.gbp.SetReadMode()
 	d.gbp.SelectAddress(addr)
 	return d.gbp.Read()
 }
 
 // ReadRange reads a range of addresses and returns all read bytes in order
 func (d *Dumper) ReadRange(startAddr uint, endAddr uint) []uint8 {
+	d.gbp.SetReadMode()
 	d.l.Printf("Reading address range 0x%x to 0x%x", startAddr, endAddr)
 	rb := make([]uint8, 0)
 	for ca := startAddr; ca < endAddr; ca++ {
@@ -43,18 +46,18 @@ func (d *Dumper) ReadRange(startAddr uint, endAddr uint) []uint8 {
 }
 
 // ReadHeader reads the whole cartridge header
-func (d *Dumper) ReadHeader() *CartridgeHeader {
+func (d *Dumper) ReadHeader() *cartridge.CartridgeHeader {
 	if d.header != nil {
 		return d.header
 	}
 	d.l.Println("Reading ROM header data.")
 	bytes := d.ReadRange(0x00, 0x150)
-	d.header = ROMHeaderFromBytes(bytes)
+	d.header = cartridge.ROMHeaderFromBytes(bytes)
 	return d.header
 }
 
 // ReadCartridge dumps the whole cartridge data. Reads all ROM & RAM banks
-func (d *Dumper) ReadCartridge() (*Cartridge, error) {
+func (d *Dumper) ReadCartridge() (*cartridge.Cartridge, error) {
 	h := d.ReadHeader()
 
 	// Dump Rom banks
@@ -66,6 +69,7 @@ func (d *Dumper) ReadCartridge() (*Cartridge, error) {
 	addrBase = 0x0000
 	for b := 0; b < nb; b++ {
 		err := d.ChangeROMBank(uint(b))
+
 		if err != nil {
 			return nil, err
 		}
@@ -80,13 +84,15 @@ func (d *Dumper) ReadCartridge() (*Cartridge, error) {
 
 	// TODO: Dump the Cartridge RAM
 
-	return NewCartridge(h, banks), nil
+	return cartridge.NewCartridge(h, banks), nil
 }
 
 // ChangeROMBank communicates with the GameBoy MBC and changes the active ROM bank
 // MBC1 cartridges map the bank 0x20 0x40 and 0x60 to 0x0000-0x3FFF address (caller must be aware of this)
 func (d *Dumper) ChangeROMBank(bank uint) error {
 	h := d.ReadHeader()
+
+	d.gbp.SetWriteMode()
 	nb := h.GetNumROMBanks()
 
 	if !h.HasMBC() {
@@ -138,6 +144,7 @@ func (d *Dumper) ChangeROMBank(bank uint) error {
 	// Low bank number
 	d.gbp.SelectAddress(0x2100)
 	d.gbp.Write(uint8(bank & lbm))
+	d.gbp.SetReadMode()
 
 	return nil
 }

@@ -1,3 +1,5 @@
+github.com/Guillem96/gameboy-tools v0.0.0-20211123082320-9ee6a88a469e h1:Dc7PcE4XJ5klPY67JxwdSERBgR0YDh15HKELvStmoXw=
+github.com/Guillem96/gameboy-tools v0.0.0-20211123082320-9ee6a88a469e/go.mod h1:r5qok4GbHnQQeLvH9xu6R/LlNCtwDQyYlMm4QyiXGHw=
 github.com/stianeikeland/go-rpio v4.2.0+incompatible h1:CUOlIxdJdT+H1obJPsmg8byu7jMSECLfAN9zynm5QGo=
 github.com/stianeikeland/go-rpio v4.2.0+incompatible/go.mod h1:Sh81rdJwD96E2wja2Gd7rrKM+XZ9LrwvN2w4IXrqLR8=
 github.com/stianeikeland/go-rpio/v4 v4.5.1 h1:sLzl5w1HS+4726C5kfvpIgjXULrLCCM82vDpAFefGQI=

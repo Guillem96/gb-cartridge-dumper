@@ -10,7 +10,7 @@ directories:
 	mkdir -p $(BUILDDIR)
 
 build: directories
-	go build -o $(BUILDDIR)/$(TARGET) main.go
+	go build -o $(BUILDDIR)/$(TARGET) main.go dumper.go
 
 rpi-build:
 	GOOS=linux GOARCH=arm GOARM=5 go build -o $(BUILDDIR)/rpi-$(TARGET)
