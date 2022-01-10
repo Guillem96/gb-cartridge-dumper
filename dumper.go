@@ -97,13 +97,11 @@ func (d *Dumper) ReadCartridge() (*cartridge.Cartridge, error) {
 // MBC1 cartridges map the bank 0x20 0x40 and 0x60 to 0x0000-0x3FFF address (caller must be aware of this)
 func (d *Dumper) ChangeROMBank(bank uint) error {
 	h := d.ReadHeader()
-
-	nb := h.GetNumROMBanks()
-
 	if !h.HasMBC() {
 		return errors.New("cartridge has no MBC")
 	}
 
+	nb := h.GetNumROMBanks()
 	if bank > uint(nb-1) {
 		errMsg := fmt.Sprintf("cartridge type 0x%x only has %d banks. You want to change to bank %d.\n",
 			h.CartridgeType, nb, bank)
@@ -149,9 +147,9 @@ func (d *Dumper) ChangeROMBank(bank uint) error {
 		d.gbp.Write(uint8((bank >> 5) & 0x03))
 	} else if h.IsMBC5() {
 		// 1 bit high number for MBC5
-		d.gbp.SetWriteMode()
-		d.gbp.SelectAddress(0x3000)
-		d.gbp.Write(uint8((bank >> 8) & 0x1))
+		// d.gbp.SetWriteMode()
+		// d.gbp.SelectAddress(0x3000)
+		// d.gbp.Write(uint8((bank >> 8) & 0x1))
 	}
 
 	return nil

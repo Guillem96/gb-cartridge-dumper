@@ -120,49 +120,8 @@ func main() {
 		gbproxy.End()
 		os.Exit(1)
 	}()
+
 	// ofrr := cartridge.NewFileROMReader("pkmn-red.gb")
-	// ocart, err := ofrr.ReadCartridge()
-	// if err != nil {
-	// 	fmt.Println(fmt.Errorf("file is not valid: %v", err))
-	// 	os.Exit(1)
-	// }
-	// ocart.Header.PrintInfo()
-
-	// frr := cartridge.NewFileROMReader("rom.gb")
-	// cart, err := frr.ReadCartridge()
-	// if err != nil {
-	// 	fmt.Println(fmt.Errorf("file is not valid: %v", err))
-	// 	os.Exit(1)
-	// }
-
-	// cart.Header.PrintInfo()
-	// // for i := 0x30; i < 0x40; i++ {
-	// // 	tmp := make([]uint8, 0x4000)
-	// // 	for j := 0; j < 0x4000; j++ {
-	// // 		tmp[j] = ocart.ROMBanks[i][j]
-	// // 		// if cart.ROMBanks[i][j] != 0 && cart.ROMBanks[i][j] != 0xff {
-	// // 		// 	fmt.Printf("Bank 0x%x at position 0x%x is not blank (0x%x)\n", i, j, cart.ROMBanks[i][j])
-	// // 		// }
-	// // 	}
-	// // 	cart.ROMBanks[i] = tmp
-	// // }
-	// // printByteArray(cart.ROMBanks[0x31][:0x4000], 32)
-	// cart.ROMBanks[0x30] = ocart.ROMBanks[0x30]
-	// cart.ROMBanks[0x1c] = ocart.ROMBanks[0x1c]
-	// cart.ROMBanks[0x0] = ocart.ROMBanks[0x0]
-
-	// cart.Validate()
-	// cart.Header.GlobalChecksum[0] = 0x5f
-	// cart.Header.GlobalChecksum[1] = 0xd8
-	// cart.Save("test-rom.gb")
-	// os.Exit(0)
-	// frr := cartridge.NewFileROMReader("pkmn-red.gb")
-	// cart, err := frr.ReadCartridge()
-	// if err != nil {
-	// 	fmt.Println(fmt.Errorf("file is not valid: %v", err))
-	// 	os.Exit(1)
-	// }
-
 	ofrr := cartridge.NewFileROMReader("good-rom.gbc")
 	cart, err := ofrr.ReadCartridge()
 	if err != nil {
@@ -187,6 +146,7 @@ func main() {
 		fmt.Println("B -> Read bank")
 		ds.Print()
 	}
+
 	err = ch.Validate()
 	if err != nil {
 		fmt.Println(fmt.Errorf("cartridge is not valid: %v", err))
@@ -200,15 +160,14 @@ func main() {
 	for i := 0; i < nRoms; i++ {
 		fmt.Printf("Switching to bank: 0x%02x\n", uint8(i))
 		var err error
-		if i > 0 {
-			err = d.ChangeROMBank(uint(i))
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			addrBase = 0x4000
+		err = d.ChangeROMBank(uint(i))
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
 		}
+
 		banks[i] = d.ReadRange(addrBase, addrBase+0x4000)
+		addrBase = 0x4000
 		printByteArray(banks[i][:40], 4)
 		CompareBanks(banks[i], i, cart)
 	}
