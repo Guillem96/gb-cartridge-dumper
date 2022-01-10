@@ -8,6 +8,7 @@ import (
 
 	"github.com/Guillem96/gameboy-tools/cartridge"
 	"github.com/Guillem96/gameboy-tools/gbproxy"
+	"github.com/schollz/progressbar/v3"
 )
 
 // Dumper is the object responsible of running "queries" against the cartridge dumper
@@ -29,7 +30,6 @@ func NewDumper(gbp gbproxy.GameBoyProxy) *Dumper {
 
 // Read reads the stored byte in cartridge requested address
 func (d *Dumper) Read(addr uint) uint8 {
-	d.gbp.SetReadMode()
 	d.gbp.SelectAddress(addr)
 	return d.gbp.Read()
 }
@@ -37,9 +37,12 @@ func (d *Dumper) Read(addr uint) uint8 {
 // ReadRange reads a range of addresses and returns all read bytes in order
 func (d *Dumper) ReadRange(startAddr uint, endAddr uint) []uint8 {
 	d.gbp.SetReadMode()
+
 	d.l.Printf("Reading address range 0x%x to 0x%x", startAddr, endAddr)
 	rb := make([]uint8, 0)
+	bar := progressbar.DefaultBytes(int64(endAddr - startAddr))
 	for ca := startAddr; ca < endAddr; ca++ {
+		bar.Add(1)
 		rb = append(rb, d.Read(ca))
 	}
 	return rb
@@ -63,17 +66,20 @@ func (d *Dumper) ReadCartridge() (*cartridge.Cartridge, error) {
 	// Dump Rom banks
 	nb := h.GetNumROMBanks()
 	banks := make([][]uint8, nb)
-	d.l.Printf("The cartridge has %d banks.\n", nb)
+	d.l.Printf("Cartridge Type: %v\n", h.CartridgeTypeText())
+	d.l.Printf("Number banks: %d\n", nb)
 
 	var addrBase uint
 	addrBase = 0x0000
 	for b := 0; b < nb; b++ {
+		d.l.Printf("Switching to bank: 0x%02x", uint8(b))
 		err := d.ChangeROMBank(uint(b))
 
 		if err != nil {
 			return nil, err
 		}
-		if h.IsMBC1() && (nb == 0x00 || nb == 0x20 || nb == 0x40 || nb == 0x60) {
+		if h.IsMBC1() && (b == 0x00 || b == 0x20 || b == 0x40 || b == 0x60) {
+			d.l.Printf("MBC1 special case (bank 0x%02x)\n", b)
 			addrBase = 0x0000
 		} else if b > 0 {
 			addrBase = 0x4000
@@ -92,11 +98,10 @@ func (d *Dumper) ReadCartridge() (*cartridge.Cartridge, error) {
 func (d *Dumper) ChangeROMBank(bank uint) error {
 	h := d.ReadHeader()
 
-	d.gbp.SetWriteMode()
 	nb := h.GetNumROMBanks()
 
 	if !h.HasMBC() {
-		return errors.New("cartridge has no MBC.")
+		return errors.New("cartridge has no MBC")
 	}
 
 	if bank > uint(nb-1) {
@@ -116,11 +121,17 @@ func (d *Dumper) ChangeROMBank(bank uint) error {
 	} else if h.IsMBC5() {
 		lbm = 0xFF
 	} else {
-		return errors.New("cartridge type not supported yet.")
+		return errors.New("cartridge type not supported yet")
 	}
+
+	// Low bank number
+	d.gbp.SetWriteMode()
+	d.gbp.SelectAddress(0x2100)
+	d.gbp.Write(uint8(bank & lbm))
 
 	if h.IsMBC1() {
 		// Enable ROM banking mode (depending on the bank we select advanced or normal banking)
+		d.gbp.SetWriteMode()
 		d.gbp.SelectAddress(0x6000)
 
 		lb := bank & lbm
@@ -133,18 +144,15 @@ func (d *Dumper) ChangeROMBank(bank uint) error {
 		}
 
 		// 2 bit high number for MBC1
+		d.gbp.SetWriteMode()
 		d.gbp.SelectAddress(0x4000)
 		d.gbp.Write(uint8((bank >> 5) & 0x03))
 	} else if h.IsMBC5() {
 		// 1 bit high number for MBC5
-		d.gbp.SelectAddress(0x4000)
-		d.gbp.Write(uint8((bank >> 8) & 0x01))
+		d.gbp.SetWriteMode()
+		d.gbp.SelectAddress(0x3000)
+		d.gbp.Write(uint8((bank >> 8) & 0x1))
 	}
-
-	// Low bank number
-	d.gbp.SelectAddress(0x2100)
-	d.gbp.Write(uint8(bank & lbm))
-	d.gbp.SetReadMode()
 
 	return nil
 }
