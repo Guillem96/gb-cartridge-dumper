@@ -67,25 +67,25 @@ func (d *Dumper) ReadCartridge() (*cartridge.Cartridge, error) {
 	nb := h.GetNumROMBanks()
 	banks := make([][]uint8, nb)
 	d.l.Printf("Cartridge Type: %v\n", h.CartridgeTypeText())
-	d.l.Printf("Number banks: %d\n", nb)
+	d.l.Printf("# ROM banks: %d\n", nb)
 
 	var addrBase uint
 	addrBase = 0x0000
 	for b := 0; b < nb; b++ {
-		d.l.Printf("Switching to bank: 0x%02x", uint8(b))
-		err := d.ChangeROMBank(uint(b))
-
-		if err != nil {
-			return nil, err
+		if h.HasMBC() {
+			d.l.Printf("Switching to ROM bank: 0x%02x", uint8(b))
+			err := d.ChangeROMBank(uint(b))
+			if err != nil {
+				return nil, err
+			}
+			if h.IsMBC1() && (b == 0x00 || b == 0x20 || b == 0x40 || b == 0x60) {
+				d.l.Printf("MBC1 special case (bank 0x%02x)\n", b)
+				addrBase = 0x0000
+			}
 		}
-		if h.IsMBC1() && (b == 0x00 || b == 0x20 || b == 0x40 || b == 0x60) {
-			d.l.Printf("MBC1 special case (bank 0x%02x)\n", b)
-			addrBase = 0x0000
-		} else if b > 0 {
-			addrBase = 0x4000
-		}
-
+		d.l.Printf("Dumping ROM bank: 0x%02x", uint8(b))
 		banks[b] = d.ReadRange(addrBase, addrBase+0x4000)
+		addrBase = 0x4000
 	}
 
 	// TODO: Dump the Cartridge RAM
@@ -147,9 +147,9 @@ func (d *Dumper) ChangeROMBank(bank uint) error {
 		d.gbp.Write(uint8((bank >> 5) & 0x03))
 	} else if h.IsMBC5() {
 		// 1 bit high number for MBC5
-		// d.gbp.SetWriteMode()
-		// d.gbp.SelectAddress(0x3000)
-		// d.gbp.Write(uint8((bank >> 8) & 0x1))
+		d.gbp.SetWriteMode()
+		d.gbp.SelectAddress(0x3000)
+		d.gbp.Write(uint8((bank >> 8) & 0x1))
 	}
 
 	return nil
