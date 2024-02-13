@@ -10,10 +10,10 @@ GameBoy Cartridge Dumper tool for Raspberry Pi written in golang.
 - `CLK` provides 1MHz to the cartridge (not used in this project)
 - `~RD` & `~WR`: When `~RD` is pulled to ground and `~WR` is set in a high state the cartridge performs a read in the selected address (`A0-A15`) and writes the result to the `D0-D7` pins.
 - `~CS`: Chip select, should be pulsed down (to ground) at the same time when reading or writing to the cartridge SRAM memory. If we only read from ROM memory it should be always in high.
-`A0-A15`: Address line. Address to read or write to.
-`D0-D7`: Data pins that allow to read or write 1 byte at a time.
-`AUDIO`: Allows to play audio via the cartridge.
-`RESET`: Allows the cartridge to reset the GameBoy. Ignored in the dumper.
+- `A0-A15`: Address line. Address to read or write to.
+- `D0-D7`: Data pins that allow to read or write 1 byte at a time.
+- `AUDIO`: Allows to play audio via the cartridge.
+- `RESET`: Allows the cartridge to reset the GameBoy. Ignored in the dumper.
 
 ## Hardware setup
 
